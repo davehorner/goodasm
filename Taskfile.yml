@@ -1,0 +1,157 @@
+version: '3'
+
+vars:
+  TARGET: Debug
+
+tasks:
+
+  install:qt:
+    desc: Install Qt 6.10.0 MSVC 2022 64-bit using Qt Online Installer (unattended)
+    cmds:
+      - cmd /C "curl -L -O https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe"
+      - cmd /C "qt-online-installer-windows-x64-online.exe --root C:\Qt --accept-licenses --default-answer --confirm-command install qt.qt6.6100.win64_msvc2022_64"
+    ignore_error: false
+
+  # Windows tasks (cmd.exe)
+  install:winget:
+    desc: Install dependencies using Winget (Windows)
+    cmds:
+      - cmd /C "winget install -e --id Kitware.CMake"
+      - cmd /C "winget install -e --id Git.Git"
+    ignore_error: true
+
+  build:cmake:
+    desc: Configure and build the project using CMake (Windows)
+    cmds:
+      - cmd /C "if not exist build mkdir build"
+      - cmd /C "cd build && cmake -DCMAKE_PREFIX_PATH=C:\Qt\6.10.0\msvc2022_64 .."
+      - cmd /C "cd build && cmake --build ."
+    ignore_error: false
+    sources:
+      - '**/*.cpp'
+      - '**/*.h'
+      - CMakeLists.txt
+    generates:
+      - build/goodasm.exe
+
+
+  test:self:
+    desc: Run GoodASM self-tests (Windows)
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --6502 --test else (exit /b 1)"
+    ignore_error: false
+
+  run:repl:
+    desc: Start GoodASM in interactive REPL mode (Windows)
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --repl else (exit /b 1)"
+    ignore_error: false
+
+  clean:
+    desc: Remove build artifacts (Windows)
+    cmds:
+      - cmd /C "if exist build rmdir /s /q build"
+    ignore_error: true
+
+  default:
+    desc: Default build (Windows)
+    cmds:
+      - task: build:cmake
+
+  all:
+    desc: Install dependencies, build, and test (Windows)
+    cmds:
+      - task: install:winget
+      - task: test:self
+
+  # POSIX tasks (Linux/macOS)
+  install:posix:
+    desc: Install dependencies using apt or brew (POSIX)
+    cmds:
+      - |
+        if command -v apt-get >/dev/null 2>&1; then \
+          sudo apt-get update && \
+          sudo apt-get install -y cmake qt6-base-dev qt6-declarative-dev git; \
+        elif command -v brew >/dev/null 2>&1; then \
+          brew install cmake qt6 git; \
+        else \
+          echo "Please install cmake, qt6, and git manually."; \
+        fi
+    ignore_error: true
+
+  build:posix:
+    desc: Configure and build the project using CMake (POSIX)
+    cmds:
+      - mkdir -p build
+      - cd build && cmake ..
+      - cd build && make -j$(nproc || echo 4)
+    ignore_error: false
+
+  test:self:posix:
+    desc: Run GoodASM self-tests (POSIX)
+    cmds:
+      - ./build/goodasm --6502 --test
+    ignore_error: false
+
+  run:repl:posix:
+    desc: Start GoodASM in interactive REPL mode (POSIX)
+    cmds:
+      - ./build/goodasm --repl
+    ignore_error: false
+
+  clean:posix:
+    desc: Remove build artifacts (POSIX)
+    cmds:
+      - rm -rf build
+    ignore_error: true
+
+  all:posix:
+    desc: Install dependencies, build, and test (POSIX)
+    deps: [install:posix, build:posix, test:self:posix]
+  test:6502:
+    desc: Run GoodASM self-tests for 6502
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --6502 --test else (exit /b 1)"
+    ignore_error: false
+
+  test:6805:
+    desc: Run GoodASM self-tests for 6805
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --6805 --test else (exit /b 1)"
+    ignore_error: false
+
+  test:sm83:
+    desc: Run GoodASM self-tests for SM83 (Gameboy)
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --sm83 --test else (exit /b 1)"
+    ignore_error: false
+
+  test:z80:
+    desc: Run GoodASM self-tests for Z80
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --z80 --test else (exit /b 1)"
+    ignore_error: false
+
+  test:8051:
+    desc: Run GoodASM self-tests for 8051
+    cmds:
+      - task: build:cmake
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --8051 --test else (exit /b 1)"
+    ignore_error: false
+
+  test:all-languages:
+    desc: Run GoodASM self-tests for all major languages
+    cmds:
+      - task: test:6502
+      - task: test:6805
+      - task: test:sm83
+      - task: test:z80
+      - task: test:8051
+      - cmd /C "if exist build\{{.TARGET}}\goodasm.exe build\{{.TARGET}}\goodasm.exe --repl else (exit /b 1)"
+    ignore_error: false

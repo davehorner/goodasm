@@ -47,16 +47,34 @@ check the issue tracker for their status.
 Source code and binaries were publicly released at
 [DistrictCon](https://www.districtcon.org/) on Feb 21, 2025.
 
+enough on its own.
+and `cmake`, then run the following:
+
 ## Building
 
-For GUI development, install the [Qt Dev
-Kit](https://www.qt.io/download-qt-installer-oss) and then open
-`CMakefile.txt` in Qt Creator.  On Windows, you must also install the
-[Git](https://git-scm.com/downloads/win) client; Github Desktop is not
-enough on its own.
+### Automated Windows Build (Preferred)
 
-To build in Linux, first install `qt6-declarative-dev`, `qml6-module-\*`, `git`
-and `cmake`, then run the following:
+This project provides a [Taskfile.yml](https://taskfile.dev) for easy automation on Windows using [Go Task](https://taskfile.dev). The preferred way to install dependencies and build is via [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/) and Task:
+
+1. Install [Go Task](https://taskfile.dev/installation/) (e.g. via `winget install -e --id GoTask.Task`)
+2. In a terminal, run:
+  ```cmd
+  task all
+  ```
+  This will:
+  - Install CMake, Qt, and Git using winget (if not already installed)
+  - Configure and build the project with CMake
+  - Run GoodASM self-tests
+
+You can also run individual tasks, e.g. `task build:cmake` or `task run:repl`.
+
+### Manual Windows Build
+
+For GUI development, install the [Qt Dev Kit](https://www.qt.io/download-qt-installer-oss) and then open `CMakefile.txt` in Qt Creator. On Windows, you must also install the [Git](https://git-scm.com/downloads/win) client; Github Desktop is not enough on its own.
+
+### Linux Build
+
+To build in Linux, first install `qt6-declarative-dev`, `qml6-module-*`, `git` and `cmake`, then run the following:
 ```
 git clone https://github.com/travisgoodspeed/goodasm
 cd goodasm
@@ -66,8 +84,19 @@ cmake ..
 make -j 8 clean all
 ```
 
-The preferred executable is `goodasm`.  The GUI for iOS and Android is
-more of a fun toy than a tool.
+The preferred executable is `goodasm`. The GUI for iOS and Android is more of a fun toy than a tool.
+## Taskfile Usage
+
+This project includes a `Taskfile.yml` for [Go Task](https://taskfile.dev). Example tasks:
+
+- `task install:winget` – Installs dependencies using winget (CMake, Qt, Git)
+- `task build:cmake` – Configures and builds the project
+- `task test:self` – Runs GoodASM self-tests
+- `task run:repl` – Starts GoodASM in interactive REPL mode
+- `task clean` – Removes build artifacts
+- `task all` – Installs dependencies, builds, and tests
+
+You can list all available tasks with `task --list`.
 
 ## Examples
 
@@ -304,6 +333,16 @@ interactive mode for iOS and Android.  Please don't do real work this
 way, but it's handy when studying an instruction set with pen and
 paper, away from a real laptop.
 
+### Exiting the REPL
+
+To exit the GoodASM interactive REPL:
+
+- On **Windows**: Press `Ctrl+Z` then Enter
+- On **Linux/macOS**: Press `Ctrl+D`
+- Or use `Ctrl+C` to interrupt/terminate the REPL
+
+There are no built-in `.exit` or `.quit` commands; only EOF or interrupt will exit the REPL.
+
 ## Identification and Grading
 
 It's a frequent problem in embedded systems reverse engineering that
@@ -509,7 +548,6 @@ source of examples for using the library.
 `gaparser.cpp` for parsing.  Parsing is very strictly shared by all
 languages, so that someday the parser can be rewritten without
 breaking code compatibility.
-
 
 ## Similar Assembler/Disassemblers
 
